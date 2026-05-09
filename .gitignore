@@ -1,0 +1,29 @@
+# 忽略敏感配置文件
+config/wechat-config.json
+config/.env.wechat
+
+# 保留模板文件
+!config/wechat-config.template.json
+!config/.env.wechat.template
+
+# 忽略编译输出
+dist/
+*.js
+*.js.map
+
+# 忽略node_modules
+node_modules/
+
+# 忽略日志文件
+*.log
+logs/
+
+# 忽略IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 忽略操作系统文件
+.DS_Store
+Thumbs.db
