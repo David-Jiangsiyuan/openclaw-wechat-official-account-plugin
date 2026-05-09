@@ -5,6 +5,7 @@
   "main": "dist/channel.js",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/server.js",
     "dev": "tsc --watch",
     "test": "jest",
     "lint": "eslint src/**/*.ts",

@@ -152,11 +152,8 @@ function validateConfig(config: WeChatConfig): void {
   if (!config.wechat.token) {
     errors.push("wechat.token 不能为空 (请配置 WECHAT_TOKEN 环境变量或 wechat-config.json)");
   }
-  if (!config.wechat.encodingAESKey) {
-    errors.push("wechat.encodingAESKey 不能为空 (请配置 WECHAT_ENCODING_AES_KEY 环境变量或 wechat-config.json)");
-  }
-  
-  // 验证格式
+  // encodingAESKey 可选 (微信测试账号不支持加密)
+  // 如果配置了，则验证格式
   if (config.wechat.encodingAESKey && config.wechat.encodingAESKey.length !== 43) {
     errors.push(`wechat.encodingAESKey 必须是43位，当前为 ${config.wechat.encodingAESKey.length} 位`);
   }

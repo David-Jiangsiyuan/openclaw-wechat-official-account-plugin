@@ -224,6 +224,27 @@ function convertToOpenClawFormat(account: WeChatAccount, message: WeChatInboundM
 async function callOpenClawAPI(request: OpenClawInboundRequest): Promise<OpenClawResponse> {
   const config = loadConfig();
   
+  // 测试模式：如果 API URL 是默认值或未配置，使用 echo 回复
+  const isTestMode = !config.openclaw.apiUrl || 
+                    config.openclaw.apiUrl === "https://api.openclaw.ai" ||
+                    config.openclaw.apiUrl.includes("your-openclaw-domain.com");
+  
+  if (isTestMode) {
+    logger.info("测试模式：OpenClaw API 未配置，使用 echo 回复", { 
+      userId: request.userId,
+      message: request.message 
+    });
+    
+    // 测试模式：echo 回复 + 欢迎语
+    const echoReply = `📞 测试模式已启用\n\n您说：${request.message}\n\n（这是测试回复，OpenClaw API 尚未配置）`;
+    
+    return {
+      success: true,
+      reply: echoReply,
+      content: echoReply,
+    };
+  }
+  
   // OpenClaw API调用
   const baseUrl = config.openclaw.apiUrl.replace(/\/$/, '');
   const apiUrl = `${baseUrl}/api/wechat/chat`;
