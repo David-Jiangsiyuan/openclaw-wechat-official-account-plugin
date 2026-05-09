@@ -4,25 +4,12 @@
  * 实现OpenClaw插件SDK的ChannelPlugin接口
  */
 
-import { ChannelPlugin, Account, InboundMessage, OutboundTarget } from "openclaw/plugin-sdk";
+import { ChannelPlugin, Account, InboundMessage, OutboundTarget } from "../types/openclaw-plugin-sdk";
 import { WeChatAccount, WeChatConfig } from "./types";
 import { loadConfig } from "./config";
 import { startGateway, stopGateway } from "./gateway";
 import { sendMessage } from "./outbound";
 import { submitToOpenClaw } from "./inbound";
-
-/**
- * WeChatAccount接口定义
- * 扩展自OpenClaw的Account接口
- */
-export interface WeChatAccount extends Account {
-  id: string;
-  appId: string;
-  appSecret: string;
-  token: string;
-  encodingAESKey: string;
-  port: number;
-}
 
 /**
  * WeChat插件主对象
