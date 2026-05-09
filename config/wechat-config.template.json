@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-05-09T12:00:00Z",
+  
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "publicUrl": "https://your-domain.com/wx/webhook"
+  },
+  
+  "wechat": {
+    "appId": "YOUR_WECHAT_APP_ID",
+    "appSecret": "YOUR_WECHAT_APP_SECRET",
+    "token": "openclaw2026",
+    "encodingAESKey": "YOUR_43_CHAR_ENCODING_AES_KEY"
+  },
+  
+  "openclaw": {
+    "knowledgeBaseId": "kb-wechat-products",
+    "apiTimeout": 10000
+  }
+}

@@ -1,4 +1,21 @@
-# 忽略敏感配置文件
+# OpenClaw 微信公众号插件 - Git忽略文件
+# ============================================
+
+# ========== 依赖文件 ==========
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ========== 编译输出 ==========
+dist/
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
+
+# ========== 配置文件 (包含敏感信息) ==========
+# 忽略实际配置文件，保留模板文件
 config/wechat-config.json
 config/.env.wechat
 
@@ -6,24 +23,57 @@ config/.env.wechat
 !config/wechat-config.template.json
 !config/.env.wechat.template
 
-# 忽略编译输出
-dist/
-*.js
-*.js.map
-
-# 忽略node_modules
-node_modules/
-
-# 忽略日志文件
+# ========== 日志文件 ==========
 *.log
 logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# 忽略IDE配置
+# ========== 系统文件 ==========
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========== IDE 配置文件 ==========
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-*
 
-# 忽略操作系统文件
+# ========== 操作系统文件 ==========
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# ========== 临时文件 ==========
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# ========== 测试覆盖率 ==========
+coverage/
+.nyc_output/
+*.lcov
+coverage.lcov
+
+# ========== 构建文件 ==========
+*.tgz
+*.tar.gz
+
+# ========== 其他 ==========
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

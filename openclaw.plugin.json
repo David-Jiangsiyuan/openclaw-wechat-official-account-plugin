@@ -1,0 +1,29 @@
+{
+  "id": "wechat",
+  "version": "1.0.0",
+  "name": "OpenClaw WeChat Plugin",
+  "description": "微信公众号智能客服插件",
+  "author": "OpenClaw Team",
+  "license": "MIT",
+  "main": "dist/channel.js",
+  "pluginType": "channel",
+  "minSdkVersion": "1.0.0",
+  "keywords": [
+    "wechat",
+    "official-account",
+    "customer-service",
+    "wechat-official-account"
+  ],
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "xml2js": "^0.6.2",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0"
+  },
+  "meta": {
+    "docsPath": "/docs/channels/wechat",
+    "logo": "wechat-logo.png",
+    "order": 60
+  }
+}
