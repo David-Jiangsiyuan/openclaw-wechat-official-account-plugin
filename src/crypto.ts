@@ -246,6 +246,7 @@ export function decryptMessage(encryptedData: Buffer | string, encodingAESKey: s
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     
     // 6. 去除PKCS7填充
+    // @ts-ignore
     decrypted = removePKCS7Padding(decrypted);
     
     // 7. 去除随机前缀 (前16字节是随机字符串)

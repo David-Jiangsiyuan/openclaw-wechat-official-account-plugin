@@ -70,21 +70,45 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
         return res.status(403).send("Forbidden");
       }
       
-      // 2. 解密消息 (安全模式)
-      let decryptedXML: string;
+      // 2. 处理消息 (支持加密和明文模式)
+      let messageXML: string;
+      let rawBody = req.body.toString();
+      
       try {
-        const encryptedData = req.body;
-        decryptedXML = decryptMessage(encryptedData, account.encodingAESKey);
-      } catch (decryptError: any) {
-        logger.error("消息解密失败", { error: decryptError.message });
-        // 解密失败也返回success，避免微信重试
+        // 检查是否是加密消息 (通过检查是否包含<Encrypt>标签)
+        const isEncrypted = rawBody.includes('<Encrypt>') || rawBody.includes('<Encrypt ');
+        
+        if (isEncrypted) {
+          // 加密消息 - 需要解密
+          logger.debug("检测到加密消息，开始解密");
+          
+          // 先解析外层XML获取Encrypt值
+          const outerXML = await parseWeChatXMLAsync(rawBody);
+          
+          // 从原始XML中提取Encrypt标签内容
+          const encryptMatch = rawBody.match(/<Encrypt><!\[CDATA\[(.*?)\]\]><\/Encrypt>/);
+          if (!encryptMatch) {
+            throw new Error("无法从XML中提取Encrypt内容");
+          }
+          
+          const encryptedData = encryptMatch[1];
+          messageXML = decryptMessage(encryptedData, account.encodingAESKey);
+        } else {
+          // 明文消息 - 直接使用
+          logger.debug("检测到明文消息，无需解密");
+          messageXML = rawBody;
+        }
+      } catch (error: any) {
+        logger.error("消息处理失败", { error: error.message });
         return res.send("success");
       }
       
       // 3. 解析XML
       let message: any;
       try {
-        message = await parseWeChatXMLAsync(decryptedXML);
+        // 如果是加密消息，messageXML已经是解密后的XML
+        // 如果是明文消息，messageXML是原始XML
+        message = await parseWeChatXMLAsync(messageXML);
         logger.info("收到微信消息", { 
           openid: message.FromUserName, 
           msgType: message.MsgType,

@@ -225,7 +225,8 @@ async function callOpenClawAPI(request: OpenClawInboundRequest): Promise<OpenCla
   const config = loadConfig();
   
   // OpenClaw API调用
-  const apiUrl = `https://${config.server.host}/api/wechat/chat`;
+  const baseUrl = config.openclaw.apiUrl.replace(/\/$/, '');
+  const apiUrl = `${baseUrl}/api/wechat/chat`;
   
   logger.debug("调用OpenClaw API", { apiUrl, userId: request.userId });
   
@@ -243,7 +244,7 @@ async function callOpenClawAPI(request: OpenClawInboundRequest): Promise<OpenCla
     throw new Error(`OpenClaw API调用失败: ${response.status} ${response.statusText}`);
   }
   
-  const result = await response.json();
+  const result = await response.json() as OpenClawResponse;
   logger.debug("OpenClaw API返回", { reply: result.reply || result.content });
   
   return result;

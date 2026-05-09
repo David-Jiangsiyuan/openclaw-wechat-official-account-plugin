@@ -4,6 +4,8 @@
  * 定义插件所需的所有TypeScript类型
  */
 
+
+// @ts-ignore
 import { Account } from "openclaw/plugin-sdk";
 
 /**
@@ -35,6 +37,7 @@ export interface WeChatConfig {
     encodingAESKey: string;
   };
   openclaw: {
+    apiUrl: string;
     knowledgeBaseId: string;
     apiTimeout: number;
   };

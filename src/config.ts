@@ -95,6 +95,7 @@ function loadFromEnv(): WeChatConfig {
       encodingAESKey: process.env.WECHAT_ENCODING_AES_KEY || "",
     },
     openclaw: {
+      apiUrl: process.env.OPENCLAW_API_URL || "https://api.openclaw.ai",
       knowledgeBaseId: process.env.OPENCLAW_KNOWLEDGE_BASE_ID || "",
       apiTimeout: parseInt(process.env.OPENCLAW_API_TIMEOUT || "10000"),
     },
