@@ -99,6 +99,10 @@ function loadFromEnv(): WeChatConfig {
       knowledgeBaseId: process.env.OPENCLAW_KNOWLEDGE_BASE_ID || "",
       apiTimeout: parseInt(process.env.OPENCLAW_API_TIMEOUT || "10000"),
     },
+    plugin: {
+      webhookUrl: process.env.PLUGIN_WEBHOOK_URL || "http://localhost:3000/wechat/message",
+      authToken: process.env.PLUGIN_AUTH_TOKEN || "default-test-token-2026",
+    },
   };
 }
 
@@ -126,6 +130,9 @@ function loadFromJSON(config: WeChatConfig): WeChatConfig {
     }
     if (jsonConfig.openclaw) {
       config.openclaw = { ...config.openclaw, ...jsonConfig.openclaw };
+    }
+    if (jsonConfig.plugin) {
+      config.plugin = { ...config.plugin, ...jsonConfig.plugin };
     }
     
     logger.info("JSON配置文件加载成功", { path: configFilePath });

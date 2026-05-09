@@ -5,13 +5,15 @@
  */
 
 import express, { Application, Request, Response } from "express";
-import { WeChatAccount, GatewayInstance } from "./types";
+import { WeChatAccount, GatewayInstance, WeChatInboundMessage } from "./types";
 import { decryptMessage, encryptMessage } from "./crypto";
-import { submitToOpenClaw } from "./inbound";
 import { loadConfig } from "./config";
 import { verifySignature } from "./utils/signature";
 import { parseWeChatXMLAsync } from "./utils/xml-parser";
 import logger from "./utils/logger";
+
+let pluginWebhookUrl = "";
+let pluginAuthToken = "";
 
 let serverInstance: any = null;
 let isProcessing = false;
@@ -23,7 +25,14 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
   const app: Application = express();
   const config = loadConfig();
   
-  logger.info("正在启动微信插件Gateway...", { port: account.port || 8080 });
+  // 加载 Plugin 配置
+  pluginWebhookUrl = config.plugin?.webhookUrl || "http://localhost:3000/wechat/message";
+  pluginAuthToken = config.plugin?.authToken || "default-test-token-2026";
+  
+  logger.info("正在启动微信插件Gateway...", { 
+    port: account.port || 8080,
+    pluginWebhook: pluginWebhookUrl 
+  });
   
   // 解析原始Body（用于XML解密）
   app.use(express.raw({ type: "text/xml", limit: "1mb" }));
@@ -122,7 +131,7 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
       // 4. 立即返回success (5秒超时处理)
       res.send("success");
       
-      // 5. 异步处理消息 (不阻塞响应)
+      // 5. 异步推送消息到 OpenClaw Plugin (不阻塞响应)
       setImmediate(async () => {
         if (isProcessing) {
           logger.warn("已有消息正在处理，跳过", { openid: message.FromUserName });
@@ -131,14 +140,14 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
         
         isProcessing = true;
         try {
-          await submitToOpenClaw(account, message);
+          await pushMessageToPlugin(account, message, rawBody);
           const processingTime = Date.now() - startTime;
-          logger.info(`消息处理完成，耗时: ${processingTime}ms`, { 
+          logger.info(`消息推送完成，耗时: ${processingTime}ms`, { 
             openid: message.FromUserName,
             processingTime 
           });
         } catch (error: any) {
-          logger.error("消息处理失败", { 
+          logger.error("消息推送失败", { 
             error: error.message, 
             stack: error.stack,
             openid: message.FromUserName 
@@ -177,6 +186,36 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
       uptime: process.uptime(),
       memory: process.memoryUsage(),
     });
+  });
+  
+  // ========== 5. 接收 OpenClaw Plugin 回复 ==========
+  app.post("/wx/reply", express.json(), async (req: Request, res: Response) => {
+    try {
+      // 验证认证 token
+      const authHeader = req.headers.authorization;
+      if (!authHeader || authHeader !== `Bearer ${pluginAuthToken}`) {
+        logger.warn("Plugin 回复认证失败");
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const { openid, content, msgType = "text" } = req.body;
+      
+      if (!openid || !content) {
+        return res.status(400).json({ error: "Missing openid or content" });
+      }
+      
+      logger.info("收到 Plugin 回复", { openid, contentLength: content.length });
+      
+      // 发送到微信
+      const { sendMessage } = await import("./outbound");
+      await sendMessage(account, { openid }, content, msgType);
+      
+      logger.info("Plugin 回复发送成功", { openid });
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error("处理 Plugin 回复失败", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
   });
   
   // 启动服务器
@@ -230,4 +269,76 @@ export function getGatewayStatus(): { isRunning: boolean; address: any } {
     isRunning: true,
     address: serverInstance.address(),
   };
+}
+
+/**
+ * 推送消息到 OpenClaw Plugin
+ */
+async function pushMessageToPlugin(
+  account: WeChatAccount, 
+  message: any, 
+  rawBody: string
+): Promise<void> {
+  try {
+    // 构建推送消息体
+    const payload = {
+      timestamp: new Date().toISOString(),
+      account: {
+        id: account.id,
+        appId: account.appId,
+      },
+      message: {
+        fromUserName: message.FromUserName,
+        toUserName: message.ToUserName,
+        msgType: message.MsgType,
+        content: message.Content || "",
+        msgId: message.MsgId || "",
+        createTime: message.CreateTime || Date.now(),
+        // 其他字段
+        mediaId: message.MediaId || "",
+        format: message.Format || "",
+        recognition: message.Recognition || "",
+        thumbMediaId: message.ThumbMediaId || "",
+        locationX: message.Location_X || "",
+        locationY: message.Location_Y || "",
+        scale: message.Scale || "",
+        label: message.Label || "",
+        title: message.Title || "",
+        description: message.Description || "",
+        url: message.Url || "",
+        event: message.Event || "",
+        eventKey: message.EventKey || "",
+      },
+      rawBody: rawBody, // 原始 XML，供 Plugin 解密用
+    };
+    
+    logger.info("推送消息到 Plugin", { 
+      pluginWebhook: pluginWebhookUrl, 
+      openid: message.FromUserName 
+    });
+    
+    // 发送 HTTP POST 请求到 Plugin webhook
+    const response = await fetch(pluginWebhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${pluginAuthToken}`,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000), // 5秒超时
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Plugin 返回错误: ${response.status} ${errorText}`);
+    }
+    
+    logger.info("消息推送成功", { openid: message.FromUserName });
+  } catch (error: any) {
+    logger.error("推送消息到 Plugin 失败", { 
+      error: error.message, 
+      pluginWebhook: pluginWebhookUrl 
+    });
+    throw error;
+  }
 }

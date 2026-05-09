@@ -5,7 +5,7 @@
   "description": "微信公众号智能客服插件",
   "author": "OpenClaw Team",
   "license": "MIT",
-  "main": "dist/channel.js",
+  "main": "dist/plugin.js",
   "pluginType": "channel",
   "minSdkVersion": "1.0.0",
   "keywords": [

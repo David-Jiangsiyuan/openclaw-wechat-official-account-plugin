@@ -2,10 +2,11 @@
   "name": "openclaw-wechat",
   "version": "1.0.0",
   "description": "OpenClaw plugin for WeChat Official Account",
-  "main": "dist/channel.js",
+  "main": "dist/plugin.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:plugin": "node dist/plugin.js",
     "dev": "tsc --watch",
     "test": "jest",
     "lint": "eslint src/**/*.ts",

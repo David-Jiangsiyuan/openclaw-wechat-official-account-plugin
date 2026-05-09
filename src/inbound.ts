@@ -157,7 +157,7 @@ async function handleMenuClick(account: WeChatAccount, message: WeChatInboundMes
 /**
  * 转换为OpenClaw格式
  */
-function convertToOpenClawFormat(account: WeChatAccount, message: WeChatInboundMessage): OpenClawInboundRequest {
+export function convertToOpenClawFormat(account: WeChatAccount, message: WeChatInboundMessage): OpenClawInboundRequest {
   const config = loadConfig();
   
   // 根据消息类型构建内容

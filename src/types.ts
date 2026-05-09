@@ -41,6 +41,10 @@ export interface WeChatConfig {
     knowledgeBaseId: string;
     apiTimeout: number;
   };
+  plugin?: {
+    webhookUrl: string;
+    authToken: string;
+  };
 }
 
 /**
