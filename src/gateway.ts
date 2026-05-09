@@ -43,7 +43,8 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
       signature as string
     )) {
       logger.warn("微信服务器验证失败：签名不匹配", { signature, timestamp, nonce });
-      return res.status(403).send("Forbidden");
+      res.status(403).send("Forbidden");
+      return;  // ← 添加 return
     }
     
     // 验证通过，返回echostr
