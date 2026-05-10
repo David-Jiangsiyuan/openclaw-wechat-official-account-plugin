@@ -220,55 +220,28 @@ export function convertToOpenClawFormat(account: WeChatAccount, message: WeChatI
 
 /**
  * 调用OpenClaw API
+ * 
+ * 当前使用测试模式，直接返回 echo 回复
+ * 后续集成真正的 OpenClaw AI 处理
  */
 async function callOpenClawAPI(request: OpenClawInboundRequest): Promise<OpenClawResponse> {
-  const config = loadConfig();
-  
-  // 测试模式：如果 API URL 是默认值或未配置，使用 echo 回复
-  const isTestMode = !config.openclaw.apiUrl || 
-                    config.openclaw.apiUrl === "https://api.openclaw.ai" ||
-                    config.openclaw.apiUrl.includes("your-openclaw-domain.com");
-  
-  if (isTestMode) {
-    logger.info("测试模式：OpenClaw API 未配置，使用 echo 回复", { 
-      userId: request.userId,
-      message: request.message 
-    });
-    
-    // 测试模式：echo 回复 + 欢迎语
-    const echoReply = `📞 测试模式已启用\n\n您说：${request.message}\n\n（这是测试回复，OpenClaw API 尚未配置）`;
-    
-    return {
-      success: true,
-      reply: echoReply,
-      content: echoReply,
-    };
-  }
-  
-  // OpenClaw API调用
-  const baseUrl = config.openclaw.apiUrl.replace(/\/$/, '');
-  const apiUrl = `${baseUrl}/api/wechat/chat`;
-  
-  logger.debug("调用OpenClaw API", { apiUrl, userId: request.userId });
-  
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(request),
-    // 设置超时
-    signal: AbortSignal.timeout(config.openclaw.apiTimeout || 10000),
+  // 测试模式：echo 回复 + 欢迎语
+  logger.info("测试模式：处理消息", { 
+    userId: request.userId,
+    message: request.message 
   });
   
-  if (!response.ok) {
-    throw new Error(`OpenClaw API调用失败: ${response.status} ${response.statusText}`);
-  }
+  const echoReply = `🤖 测试回复
+
+您说：${request.message}
+
+（这是测试模式，后续将接入 OpenClaw AI 智能回复）`;
   
-  const result = await response.json() as OpenClawResponse;
-  logger.debug("OpenClaw API返回", { reply: result.reply || result.content });
-  
-  return result;
+  return {
+    success: true,
+    reply: echoReply,
+    content: echoReply,
+  };
 }
 
 /**
@@ -306,7 +279,7 @@ async function handleOpenClawResponse(
  * 发送兜底话术
  */
 async function sendFallbackMessage(account: WeChatAccount, openid: string): Promise<void> {
-  const fallbackMessage = "抱歉，系统暂时无法处理您的请求，请稍后再试或联系人工客服。";
+  const fallbackMessage = "您的客服开了个小差，请稍后再试";
   
   try {
     await sendMessage(account, { openid }, fallbackMessage, "text");
@@ -367,16 +340,26 @@ async function enrichMessageWithUserInfo(
 async function getUserInfo(account: WeChatAccount, openid: string): Promise<any> {
   const accessToken = await getAccessToken(account);
   
-  const response = await fetch(
-    `https://api.weixin.qq.com/cgi-bin/user/info?access_token=${accessToken}&openid=${openid}&lang=zh_CN`,
-    {
-      signal: AbortSignal.timeout(5000),
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  
+  try {
+    const response = await fetch(
+      `https://api.weixin.qq.com/cgi-bin/user/info?access_token=${accessToken}&openid=${openid}&lang=zh_CN`,
+      {
+        signal: controller.signal,
+      }
+    );
+    
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`获取用户信息失败: ${response.status} ${response.statusText}`);
     }
-  );
-  
-  if (!response.ok) {
-    throw new Error(`获取用户信息失败: ${response.status} ${response.statusText}`);
+    
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
   }
-  
-  return await response.json();
 }

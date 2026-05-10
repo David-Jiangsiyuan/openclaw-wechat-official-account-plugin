@@ -1,7 +1,7 @@
 /**
- * OAPlugin v2.0 - 主入口
+ * OAPlugin v2.0 - OpenClaw 标准扩展插件
  * 
- * 简化版本，不依赖 OpenClaw SDK 类型
+ * 实现 ChannelPlugin 接口，与 OpenClaw Core 集成
  */
 
 import { WeChatAccount, WeChatConfig } from "./types";
@@ -12,12 +12,15 @@ import { submitToOpenClaw } from "./inbound";
 
 // 简化类型定义，避免依赖 OpenClaw SDK
 type OutboundTarget = any;
+type InboundMessage = any;
 
 /**
- * WeChat插件主对象
+ * OAPlugin 主对象
+ * 实现 ChannelPlugin 接口
  */
-export const wechatPlugin = {
+export const openclawWechatOAPlugin = {
   id: "openclaw-wechatOA",
+  
   meta: {
     id: "openclaw-wechatOA",
     label: "WeChat Official Account",
@@ -61,8 +64,7 @@ export const wechatPlugin = {
       return Boolean(
         account?.appId && 
         account?.appSecret && 
-        account?.token && 
-        account?.encodingAESKey
+        account?.token
       );
     },
     
@@ -71,7 +73,7 @@ export const wechatPlugin = {
     },
   },
   
-  // ========== 消息发送 ==========
+  // ========== 消息发送（通过 OAGateway）==========
   deliver: async ({ 
     account, 
     target, 
@@ -97,7 +99,7 @@ export const wechatPlugin = {
       const gateway = await startGateway(account);
       return { success: true, gateway };
     } catch (error: any) {
-      throw new Error(`启动微信插件失败: ${error.message}`);
+      throw new Error(`启动 OAPlugin 失败: ${error.message}`);
     }
   },
   
@@ -106,14 +108,14 @@ export const wechatPlugin = {
       await stopGateway(account);
       return { success: true };
     } catch (error: any) {
-      throw new Error(`停止微信插件失败: ${error.message}`);
+      throw new Error(`停止 OAPlugin 失败: ${error.message}`);
     }
   },
   
-  // ========== 接收消息处理 ==========
+  // ========== 接收消息处理（从 OAGateway 转发）==========
   onInbound: async ({ account, rawMessage }: { account: WeChatAccount; rawMessage: any }) => {
     return submitToOpenClaw(account, rawMessage);
   },
 };
 
-export default wechatPlugin;
+export default openclawWechatOAPlugin;
