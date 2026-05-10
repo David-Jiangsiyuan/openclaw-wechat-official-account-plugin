@@ -1,21 +1,22 @@
 /**
- * OpenClaw 微信公众号插件 - 主入口 (ChannelPlugin接口)
+ * OAPlugin v2.0 - 主入口
  * 
- * 实现OpenClaw插件SDK的ChannelPlugin接口
+ * 简化版本，不依赖 OpenClaw SDK 类型
  */
 
-import { ChannelPlugin, Account, InboundMessage, OutboundTarget } from "../types/openclaw-plugin-sdk";
 import { WeChatAccount, WeChatConfig } from "./types";
 import { loadConfig } from "./config";
 import { startGateway, stopGateway } from "./gateway";
 import { sendMessage } from "./outbound";
 import { submitToOpenClaw } from "./inbound";
 
+// 简化类型定义，避免依赖 OpenClaw SDK
+type OutboundTarget = any;
+
 /**
  * WeChat插件主对象
- * 实现ChannelPlugin接口
  */
-export const wechatPlugin: ChannelPlugin<WeChatAccount> = {
+export const wechatPlugin = {
   id: "wechat",
   meta: {
     id: "wechat",
@@ -28,12 +29,12 @@ export const wechatPlugin: ChannelPlugin<WeChatAccount> = {
   },
   
   capabilities: {
-    chatTypes: ["direct"],           // 服务号支持单聊
-    media: true,                     // 支持图片/语音
+    chatTypes: ["direct"],
+    media: true,
     reactions: false,
     threads: false,
-    blockStreaming: true,            // 不支持流式输出
-    knowledgeBase: true,             // 支持知识库
+    blockStreaming: true,
+    knowledgeBase: true,
   },
   
   // ========== 账户管理 ==========
@@ -111,7 +112,6 @@ export const wechatPlugin: ChannelPlugin<WeChatAccount> = {
   
   // ========== 接收消息处理 ==========
   onInbound: async ({ account, rawMessage }: { account: WeChatAccount; rawMessage: any }) => {
-    // 由gateway直接调用OpenClaw核心，此函数用于格式转换
     return submitToOpenClaw(account, rawMessage);
   },
 };

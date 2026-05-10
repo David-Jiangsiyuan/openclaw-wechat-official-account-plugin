@@ -18,6 +18,9 @@ let pluginAuthToken = "";
 let serverInstance: any = null;
 let isProcessing = false;
 
+// 兜底话术
+const FALLBACK_MESSAGE = "您的客服开了个小差，请稍后再试";
+
 /**
  * 启动 Gateway
  */
@@ -109,6 +112,8 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
         }
       } catch (error: any) {
         logger.error("消息处理失败", { error: error.message });
+        // 发送兜底话术
+        await sendFallbackMessage(account, req.body?.FromUserName || "unknown", FALLBACK_MESSAGE);
         return res.send("success");
       }
       
@@ -125,6 +130,8 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
         });
       } catch (parseError: any) {
         logger.error("XML解析失败", { error: parseError.message });
+        // 发送兜底话术
+        await sendFallbackMessage(account, message?.FromUserName || "unknown", FALLBACK_MESSAGE);
         return res.send("success");
       }
       
@@ -152,6 +159,8 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
             stack: error.stack,
             openid: message.FromUserName 
           });
+          // 发送兜底话术
+          await sendFallbackMessage(account, message.FromUserName, FALLBACK_MESSAGE);
         } finally {
           isProcessing = false;
         }
@@ -163,6 +172,8 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
       if (!res.headersSent) {
         res.send("success");
       }
+      // 发送兜底话术
+      await sendFallbackMessage(account, req.body?.FromUserName || "unknown", FALLBACK_MESSAGE);
     }
   });
   
@@ -340,5 +351,21 @@ async function pushMessageToPlugin(
       pluginWebhook: pluginWebhookUrl 
     });
     throw error;
+  }
+}
+
+/**
+ * 发送兜底话术
+ */
+async function sendFallbackMessage(account: WeChatAccount, openid: string, message: string): Promise<void> {
+  try {
+    logger.info("发送兜底话术", { openid, message });
+    
+    const { sendMessage } = await import("./outbound");
+    await sendMessage(account, { openid }, message, "text");
+    
+    logger.info("兜底话术发送成功", { openid });
+  } catch (error: any) {
+    logger.error("兜底话术发送失败", { error: error.message, openid });
   }
 }
