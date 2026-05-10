@@ -1,18 +1,20 @@
 {
   "id": "wechat",
-  "version": "1.0.0",
-  "name": "OpenClaw WeChat Plugin",
-  "description": "微信公众号智能客服插件",
+  "version": "2.0.0",
+  "name": "OAPlugin - WeChat Official Account",
+  "description": "OpenClaw WeChat Official Account Plugin (OAPlugin v2.0) - Integrated with OAGateway",
   "author": "OpenClaw Team",
   "license": "MIT",
-  "main": "dist/plugin.js",
+  "main": "dist/channel.js",
   "pluginType": "channel",
   "minSdkVersion": "1.0.0",
   "keywords": [
     "wechat",
     "official-account",
     "customer-service",
-    "wechat-official-account"
+    "wechat-official-account",
+    "oaplugin",
+    "oagateway"
   ],
   "dependencies": {
     "express": "^4.18.2",

@@ -1,8 +1,8 @@
 {
   "name": "openclaw-wechat",
-  "version": "1.0.0",
-  "description": "OpenClaw plugin for WeChat Official Account",
-  "main": "dist/plugin.js",
+  "version": "2.0.0",
+  "description": "OpenClaw WeChat Official Account Plugin (OAPlugin) - v2.0 with OAGateway",
+  "main": "dist/channel.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
@@ -17,7 +17,9 @@
     "plugin",
     "wechat",
     "wechat-official-account",
-    "customer-service"
+    "customer-service",
+    "oaplugin",
+    "oagateway"
   ],
   "author": "OpenClaw Team",
   "license": "MIT",

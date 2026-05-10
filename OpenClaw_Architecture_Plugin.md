@@ -24,7 +24,7 @@
 
 ## 一、系统架构设计
 
-### 1.1 整体系统架构图
+### 1.1 整体系统架构图（2.0版本）
 
 ```mermaid
 graph TB
@@ -36,23 +36,25 @@ graph TB
         WS[微信服务器]
     end
     
-    subgraph "OpenClaw 插件层 - openclaw-wechat"
-        GW[Gateway模块<br/>HTTP服务器]
-        CR[Crypto模块<br/>加解密]
-        IN[Inbound模块<br/>消息接收处理]
-        OUT[Outbound模块<br/>消息发送]
-        CFG[Config模块<br/>配置管理]
-        RT[Runtime模块<br/>运行时管理]
-    end
-    
-    subgraph "OpenClaw 核心层"
-        OC[OpenClaw 核心引擎]
-        KB[知识库]
-        DM[对话管理]
-    end
-    
-    subgraph "外部接口层"
-        WA[微信API<br/>客服接口/用户接口]
+    subgraph "OpenClaw 服务器（同一台机器）"
+        subgraph "OAGateway 服务"
+            GW[Gateway模块<br/>HTTP服务器<br/>端口8080]
+            CR[Crypto模块<br/>加解密]
+            WA[微信API封装<br/>客服接口]
+        end
+        
+        subgraph "OAPlugin 扩展插件"
+            CH[channel.ts<br/>主入口]
+            IN[Inbound模块<br/>消息接收处理]
+            OUT[Outbound模块<br/>消息发送]
+            CFG[Config模块<br/>配置管理]
+        end
+        
+        subgraph "OpenClaw 核心层"
+            OC[OpenClaw 核心引擎]
+            KB[知识库]
+            DM[对话管理]
+        end
     end
     
     subgraph "数据存储层"
@@ -73,8 +75,7 @@ graph TB
     WS -->|接收回复| U
     
     CFG -->|读取配置| FILE
-    RT -->|管理生命周期| GW
-    RT -->|记录日志| DB
+    CH -->|管理生命周期| GW
     IN -->|保存消息| DB
     OUT -->|保存消息| DB
     
@@ -85,6 +86,11 @@ graph TB
     style OC fill:#fff4e1
     style KB fill:#e8f5e9
 ```
+
+**2.0版本关键变更**：
+- OAGateway 与 OpenClaw 部署在同一台服务器
+- 本地通信（localhost），避免网络复杂性
+- 简化防火墙配置，提升安全性
 
 ### 1.2 插件模块结构图
 
