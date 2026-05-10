@@ -1,125 +1,143 @@
-# OpenClaw 微信公众号客服助手插件 (OAPlugin v2.0)
+# OpenClaw 微信公众号插件 v2.1.0
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin/blob/main/LICENSE)
-[![OpenClaw Plugin](https://img.shields.io/badge/OpenClaw-Plugin-orange.svg)](https://github.com/openclaw)
+## 架构变更说明
 
-**2.0版本重大更新**：
-- **OAPlugin**：标准 OpenClaw 扩展插件，与核心深度集成
-- **OAGateway**：微信公众号对接服务，与 OpenClaw 同机部署
-- **简化架构**：本地通信，避免网络复杂性，提升安全性
+### v2.1.0 重大变更
 
-## 系统架构
+**移除 OAPlugin 独立服务**，OAGateway 直接集成 OpenClaw QA Bus API：
 
 ```
-微信用户 → 微信服务器 → OAGateway (localhost:8080) → OAPlugin → OpenClaw Core
+用户微信消息 → OAGateway → injectQaBusInboundMessage → OpenClaw Core (AI处理)
+                                                     ↓
+用户微信消息 ← OAGateway ← pollQaBus (获取回复) ←─┘
 ```
 
-**部署方式**：
-- OAGateway 与 OpenClaw 部署在同一台服务器
-- 本地回环通信（127.0.0.1），无需开放外部端口
-- 简化防火墙配置，提升安全性
+**变更原因**：
+- OAPlugin 作为标准插件无法直接处理外部消息
+- OpenClaw 提供 QA Bus API 供外部注入消息
+- 简化架构，减少维护成本
 
-## 交付件
+### 当前架构
 
-| 组件 | 类型 | 说明 |
-|------|------|------|
-| **OAPlugin** | OpenClaw 扩展插件 | 标准插件安装，通过 `openclaw plugin install` 安装 |
-| **OAGateway** | 独立服务 | 与 OpenClaw 同机部署，监听 8080 端口 |
+**OAGateway (v2.1.0)**：
+- 接收微信服务器推送的消息
+- 直接调用 `injectQaBusInboundMessage` 将消息注入 OpenClaw
+- 使用 `pollQaBus` 获取 OpenClaw 的 AI 回复
+- 通过微信公众号客服接口发送回复给用户
 
-## 安装步骤
-
-### 1. 安装 OAPlugin（OpenClaw 插件）
-
-```bash
-openclaw plugin install openclaw-wechat
-```
-
-### 2. 配置 OAGateway
-
-```bash
-cp config/wechat-config.template.json config/wechat-config.json
-# 编辑配置，填写微信公众号信息
-```
-
-### 3. 启动服务
-
-```bash
-# OpenClaw 会自动启动 OAGateway
-openclaw plugin start wechat
-```
+**OpenClaw Core**：
+- 接收 QA Bus 消息
+- AI 处理并生成回复
+- 通过 QA Bus 返回回复
 
 ## 配置说明
 
-### 微信公众号配置
+### 环境变量 (.env.wechat)
 
-| 配置项 | 说明 | 获取方式 |
-|--------|------|----------|
-| appId | 公众号 AppID | 微信公众平台 |
-| appSecret | 公众号 AppSecret | 微信公众平台 |
-| token | 开发者 Token | 自定义 |
-| encodingAESKey | 消息加解密密钥 | 随机生成 |
+```bash
+# 微信配置
+WECHAT_APP_ID=your_app_id
+WECHAT_APP_SECRET=your_app_secret
+WECHAT_TOKEN=your_token
+WECHAT_ENCODING_AES_KEY=your_encoding_aes_key
 
-### 服务器配置
+# OpenClaw 配置
+OPENCLAW_API_URL=http://127.0.0.1:25265
+OPENCLAW_ACCOUNT_ID=a366989004a7-im-bot
+```
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| host | 127.0.0.1 | 监听地址（本地） |
-| port | 8080 | OAGateway 端口 |
+### 配置文件 (wechat-config.json)
 
-## 技术栈
+```json
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 80,
+    "publicUrl": "http://your-domain:80/wx/webhook"
+  },
+  "wechat": {
+    "appId": "your_app_id",
+    "appSecret": "your_app_secret",
+    "token": "your_token",
+    "encodingAESKey": ""
+  },
+  "openclaw": {
+    "apiUrl": "http://127.0.0.1:25265",
+    "accountId": "a366989004a7-im-bot"
+  }
+}
+```
 
-| 类别 | 技术 | 说明 |
-|------|------|------|
-| **运行时** | Node.js 18+ | 与 OpenClaw 核心一致 |
-| **开发语言** | TypeScript 5+ | 类型安全 |
-| **HTTP 服务器** | Express 4.x | OAGateway |
-| **XML 处理** | xml2js | 微信消息解析 |
-| **HTTP 客户端** | axios | 微信 API 调用 |
-| **配置管理** | dotenv + JSON | 环境变量 + 配置文件 |
-| **加解密** | crypto (Node.js 内置) | AES-256-CBC |
-| **日志** | winston | 结构化日志 |
+## 部署说明
 
-## 故障排查
+### 1. 安装依赖
 
-### 问题1：微信服务器验证失败
+```bash
+npm install
+```
 
-**症状**：公众平台配置 URL 时提示"验证失败"
+### 2. 配置环境变量
 
-**解决**：
-1. 确认 OAGateway 已启动（`curl http://localhost:8080/health`）
-2. 检查 Token 是否一致
-3. 确认端口 8080 未被占用
+复制 `config/.env.wechat.template` 为 `config/.env.wechat` 并填写配置。
 
-### 问题2：消息接收失败
+### 3. 编译
 
-**症状**：用户发消息，无回复
+```bash
+npm run build
+```
 
-**解决**：
-1. 检查 OAGateway 日志
-2. 确认 EncodingAESKey 正确
-3. 检查 OpenClaw 插件是否已启用
+### 4. 启动
 
-### 问题3：客服接口调用失败
+```bash
+node dist/server.js
+```
 
-**症状**：日志显示"客服接口调用失败"
+### 5. 配置微信公众号
 
-**常见错误码**：
-- **40001**：access_token 无效，重新获取
-- **45015**：用户超过 48 小时未互动
-- **45009**：接口调用超过限制
+在微信公众号后台配置服务器 URL：
+- URL: `http://your-domain:80/wx/webhook`
+- Token: 与配置文件中一致
 
-## 许可证
+## API 说明
 
-MIT License - 查看 [LICENSE](LICENSE) 文件了解详情
+### 健康检查
 
-## 联系方式
+```
+GET /health
+```
 
-- **项目主页**：https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin
-- **问题反馈**：https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin/issues
+### 接收微信消息
 
----
+```
+POST /wx/webhook
+Content-Type: text/xml
+```
 
-**由 OpenClaw Team 开发和维护**
+### 接收 OpenClaw 回复
 
-*最后更新: 2026-05-10*
+```
+POST /wx/reply
+Authorization: Bearer {authToken}
+Content-Type: application/json
+
+{
+  "openid": "user_openid",
+  "content": "回复内容",
+  "msgType": "text"
+}
+```
+
+## 版本历史
+
+### v2.1.0 (2026-05-10)
+- 移除 OAPlugin 独立服务
+- OAGateway 直接集成 OpenClaw QA Bus API
+- 简化架构，减少维护成本
+
+### v2.0.5 (2026-05-10)
+- 修复直接消息处理问题
+- 测试模式工作正常
+
+### v2.0.0 (2026-05-10)
+- 初始版本
+- OAGateway + OAPlugin 架构

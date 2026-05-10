@@ -1,7 +1,8 @@
 /**
- * OpenClaw 微信公众号插件 - Gateway 模块
+ * OpenClaw 微信公众号插件 - Gateway 模块 (v2.1.0)
  * 
  * HTTP 服务器，接收微信服务器推送的消息
+ * 直接集成 OpenClaw QA Bus API，无需 OAPlugin
  */
 
 import express, { Application, Request, Response } from "express";
@@ -12,8 +13,9 @@ import { verifySignature } from "./utils/signature";
 import { parseWeChatXMLAsync } from "./utils/xml-parser";
 import logger from "./utils/logger";
 
-let pluginWebhookUrl = "";
-let pluginAuthToken = "";
+// OpenClaw QA Bus 配置
+let openclawBaseUrl = "http://127.0.0.1:25265";
+let openclawAccountId = "a366989004a7-im-bot";
 
 let serverInstance: any = null;
 let isProcessing = false;
@@ -28,13 +30,14 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
   const app: Application = express();
   const config = loadConfig();
   
-  // 加载 Plugin 配置
-  pluginWebhookUrl = config.plugin?.webhookUrl || "http://localhost:3000/wechat/message";
-  pluginAuthToken = config.plugin?.authToken || "default-test-token-2026";
+  // 加载 OpenClaw 配置
+  openclawBaseUrl = config.openclaw?.apiUrl || "http://127.0.0.1:25265";
+  openclawAccountId = "a366989004a7-im-bot"; // 从 openclaw.json 获取
   
-  logger.info("正在启动微信插件Gateway...", { 
+  logger.info("正在启动微信插件Gateway (v2.1.0)...", { 
     port: account.port || 8080,
-    pluginWebhook: pluginWebhookUrl 
+    openclawBaseUrl,
+    openclawAccountId
   });
   
   // 解析原始Body（用于XML解密）

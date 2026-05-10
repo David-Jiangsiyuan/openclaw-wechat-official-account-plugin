@@ -1,6 +1,6 @@
 {
   "name": "openclaw-wechat",
-  "version": "2.0.5",
+  "version": "2.1.0",
   "description": "OpenClaw WeChat Official Account Plugin (OAPlugin) - v2.0 with OAGateway",
   "main": "dist/channel.js",
   "scripts": {
