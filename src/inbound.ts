@@ -18,8 +18,13 @@ export async function submitToOpenClaw(account: WeChatAccount, rawMessage: any):
   try {
     logger.info("开始处理微信消息", { openid: rawMessage.FromUserName });
     
-    // 1. 解析微信消息
-    const message: WeChatInboundMessage = await parseWeChatXMLAsync(rawMessage);
+    // 如果传入的是字符串，解析XML；如果是对象，直接使用
+    let message: WeChatInboundMessage;
+    if (typeof rawMessage === 'string') {
+      message = await parseWeChatXMLAsync(rawMessage);
+    } else {
+      message = rawMessage as WeChatInboundMessage;
+    }
     
     // 2. 处理事件消息
     if (message.MsgType === "event") {

@@ -138,7 +138,7 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
       // 4. 立即返回success (5秒超时处理)
       res.send("success");
       
-      // 5. 异步推送消息到 OpenClaw Plugin (不阻塞响应)
+      // 5. 异步处理消息 (不阻塞响应)
       setImmediate(async () => {
         if (isProcessing) {
           logger.warn("已有消息正在处理，跳过", { openid: message.FromUserName });
@@ -147,14 +147,17 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
         
         isProcessing = true;
         try {
-          await pushMessageToPlugin(account, message, rawBody);
+          // 直接调用 submitToOpenClaw 处理消息
+          const { submitToOpenClaw } = await import("./inbound");
+          await submitToOpenClaw(account, message);
+          
           const processingTime = Date.now() - startTime;
-          logger.info(`消息推送完成，耗时: ${processingTime}ms`, { 
+          logger.info(`消息处理完成，耗时: ${processingTime}ms`, { 
             openid: message.FromUserName,
             processingTime 
           });
         } catch (error: any) {
-          logger.error("消息推送失败", { 
+          logger.error("消息处理失败", { 
             error: error.message, 
             stack: error.stack,
             openid: message.FromUserName 
