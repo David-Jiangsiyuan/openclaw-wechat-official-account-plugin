@@ -10,12 +10,17 @@ import { WeChatAccount, GatewayInstance, WeChatInboundMessage } from "./types";
 import { decryptMessage, encryptMessage } from "./crypto";
 import { loadConfig } from "./config";
 import { verifySignature } from "./utils/signature";
+import { initOpenClawAPI, injectMessage, pollReplies } from "./openclaw-api";
+import { sendMessage } from "./outbound";
+import { initQueue, enqueue, getPendingMessages, getQueueStatus, updateStatus, cleanupQueue, getQueueItems } from "./queue";
 import { parseWeChatXMLAsync } from "./utils/xml-parser";
 import logger from "./utils/logger";
 
 // OpenClaw QA Bus 配置
 let openclawBaseUrl = "http://127.0.0.1:25265";
 let openclawAccountId = "a366989004a7-im-bot";
+let pluginWebhookUrl = "";
+let pluginAuthToken = "";
 
 let serverInstance: any = null;
 let isProcessing = false;
@@ -40,9 +45,22 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
     openclawAccountId
   });
   
-  // 解析原始Body（用于XML解密）
-  app.use(express.raw({ type: "text/xml", limit: "1mb" }));
+  // 初始化 OpenClaw API
+  initOpenClawAPI({
+    baseUrl: openclawBaseUrl,
+    accountId: openclawAccountId,
+  });
+  
+  // 初始化消息队列
+  initQueue({ maxSize: 1000, ttlMs: 5 * 60 * 1000 });
+  
+  // 解析 JSON body (用于 API 路由)
   app.use(express.json());
+  
+  // 解析原始Body（用于XML解密）
+  app.use(express.raw({ type: "application/xml", limit: "1mb" }));
+  app.use(express.raw({ type: "text/xml", limit: "1mb" }));
+  app.use(express.text({ type: "*/*", limit: "1mb" }));
   
   // ========== 1. 微信服务器验证 (首次配置) ==========
   app.get("/wx/webhook", (req: Request, res: Response) => {
@@ -150,9 +168,40 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
         
         isProcessing = true;
         try {
-          // 直接调用 submitToOpenClaw 处理消息
-          const { submitToOpenClaw } = await import("./inbound");
-          await submitToOpenClaw(account, message);
+          // 注入消息到 OpenClaw QA Bus
+          const injectResult = await injectMessage({
+            conversationId: message.FromUserName,
+            senderId: message.FromUserName,
+            text: message.Content || "[空消息]",
+          });
+          
+          logger.info("消息已注入 OpenClaw", { messageId: injectResult.message?.id });
+          
+          // 轮询获取回复
+          const pollResult = await pollReplies({
+            cursor: 0,
+            timeoutMs: 30000,
+          });
+          
+          // 处理回复
+          if (pollResult.events && pollResult.events.length > 0) {
+            for (const event of pollResult.events) {
+              if (event.kind === "outbound-message" && event.message) {
+                const replyText = event.message.text;
+                logger.info("收到 OpenClaw 回复", { 
+                  openid: message.FromUserName,
+                  reply: replyText.substring(0, 100)
+                });
+                
+                // 发送回复给用户
+                await sendMessage(account, { openid: message.FromUserName }, replyText, "text");
+              }
+            }
+          } else {
+            logger.warn("未收到 OpenClaw 回复");
+            // 发送兜底话术
+            await sendMessage(account, { openid: message.FromUserName }, FALLBACK_MESSAGE, "text");
+          }
           
           const processingTime = Date.now() - startTime;
           logger.info(`消息处理完成，耗时: ${processingTime}ms`, { 
@@ -166,7 +215,7 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
             openid: message.FromUserName 
           });
           // 发送兜底话术
-          await sendFallbackMessage(account, message.FromUserName, FALLBACK_MESSAGE);
+          await sendMessage(account, { openid: message.FromUserName }, FALLBACK_MESSAGE, "text");
         } finally {
           isProcessing = false;
         }
@@ -234,6 +283,98 @@ export async function startGateway(account: WeChatAccount): Promise<GatewayInsta
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // ========== 6. 消息队列 API (OpenClaw 主动推送) ==========
+  app.post("/api/queue/enqueue", express.json(), async (req: Request, res: Response) => {
+    try {
+      const { openid, content, msgType = "text" } = req.body;
+      
+      if (!openid || !content) {
+        return res.status(400).json({ error: "Missing openid or content" });
+      }
+      
+      const item = enqueue({ openid, content, msgType });
+      logger.info("消息入队", { id: item.id, openid });
+      
+      res.json({ success: true, item });
+    } catch (error: any) {
+      logger.error("入队失败", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // 获取待处理消息
+  app.get("/api/queue/pending", (req: Request, res: Response) => {
+    const messages = getPendingMessages();
+    res.json({ messages });
+  });
+  
+  // 获取队列状态
+  app.get("/api/queue/status", (req: Request, res: Response) => {
+    const status = getQueueStatus();
+    res.json(status);
+  });
+  
+  // 更新消息状态
+  app.post("/api/queue/update", express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id, status } = req.body;
+      
+      if (!id || !status) {
+        return res.status(400).json({ error: "Missing id or status" });
+      }
+      
+      const success = updateStatus(id, status);
+      res.json({ success });
+    } catch (error: any) {
+      logger.error("更新状态失败", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // 清理队列
+  app.post("/api/queue/cleanup", (req: Request, res: Response) => {
+    const removed = cleanupQueue();
+    res.json({ removed });
+  });
+  
+  // ========== 7. 发送队列消息到微信 (轮询或触发) ==========
+  app.post("/api/queue/process", async (req: Request, res: Response) => {
+    try {
+      const pending = getPendingMessages();
+      
+      if (pending.length === 0) {
+        return res.json({ processed: 0 });
+      }
+      
+      let processed = 0;
+      for (const item of pending) {
+        try {
+          updateStatus(item.id, "processing");
+          await sendMessage(account, { openid: item.openid }, item.content, item.msgType);
+          updateStatus(item.id, "completed");
+          processed++;
+          logger.info("队列消息发送成功", { id: item.id, openid: item.openid });
+        } catch (error: any) {
+          updateStatus(item.id, "failed");
+          logger.error("队列消息发送失败", { id: item.id, error: error.message });
+        }
+      }
+      
+      res.json({ processed, total: pending.length });
+    } catch (error: any) {
+      logger.error("处理队列失败", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // ========== 8. 定时清理任务 ==========
+  setInterval(() => {
+    const removed = cleanupQueue();
+    if (removed > 0) {
+      logger.info("定时清理队列", { removed });
+    }
+  }, 60 * 1000); // 每分钟清理一次
   
   // 启动服务器
   const port = account.port || 8080;
