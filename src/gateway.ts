@@ -329,22 +329,32 @@ async function pushMessageToPlugin(
     });
     
     // 发送 HTTP POST 请求到 Plugin webhook
-    const response = await fetch(pluginWebhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${pluginAuthToken}`,
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(5000), // 5秒超时
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5秒超时
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Plugin 返回错误: ${response.status} ${errorText}`);
+    try {
+      const response = await fetch(pluginWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${pluginAuthToken}`,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Plugin 返回错误: ${response.status} ${errorText}`);
+      }
+      
+      logger.info("消息推送成功", { openid: message.FromUserName });
+    } catch (error: any) {
+      clearTimeout(timeout);
+      throw error;
     }
-    
-    logger.info("消息推送成功", { openid: message.FromUserName });
   } catch (error: any) {
     logger.error("推送消息到 Plugin 失败", { 
       error: error.message, 
