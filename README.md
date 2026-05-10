@@ -1,7 +1,7 @@
 # OpenClaw 微信公众号客服助手插件
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/openclaw/openclaw-wechat)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/openclaw/openclaw-wechat/blob/main/LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin/blob/main/LICENSE)
 [![OpenClaw Plugin](https://img.shields.io/badge/OpenClaw-Plugin-orange.svg)](https://github.com/openclaw)
 
 OpenClaw 微信公众号客服助手插件，为微信公众号提供智能客服能力，支持自动回复、知识库查询、多轮对话等功能。
@@ -60,7 +60,7 @@ openclaw plugin start wechat
 
 ```bash
 # 1. 下载插件包
-wget https://github.com/openclaw/openclaw-wechat/releases/download/v1.0.0/openclaw-wechat-1.0.0.tgz
+wget https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin/releases/download/v1.0.0/openclaw-wechat-1.0.0.tgz
 
 # 2. 解压到插件目录
 tar -xzf openclaw-wechat-1.0.0.tgz -C ~/.openclaw/plugins/
@@ -77,8 +77,8 @@ npm run build
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/openclaw/openclaw-wechat.git
-cd openclaw-wechat
+git clone https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin.git
+cd openclaw-wechat-official-account-plugin
 
 # 2. 安装依赖
 npm install
@@ -393,8 +393,8 @@ npm run build
 
 ## 📧 联系方式
 
-- **项目主页**: https://github.com/openclaw/openclaw-wechat
-- **问题反馈**: https://github.com/openclaw/openclaw-wechat/issues
+- **项目主页**: https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin
+- **问题反馈**: https://github.com/David-Jiangsiyuan/openclaw-wechat-official-account-plugin/issues
 - **邮件联系**: support@openclaw.com
 
 ---
