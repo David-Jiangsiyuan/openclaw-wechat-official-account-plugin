@@ -17,12 +17,12 @@ type OutboundTarget = any;
  * WeChat插件主对象
  */
 export const wechatPlugin = {
-  id: "wechat",
+  id: "openclaw-wechatOA",
   meta: {
-    id: "wechat",
+    id: "openclaw-wechatOA",
     label: "WeChat Official Account",
     selectionLabel: "微信公众号",
-    docsPath: "/docs/channels/wechat",
+    docsPath: "/docs/channels/openclaw-wechatOA",
     blurb: "连接微信公众号，实现智能客服",
     logo: "wechat-logo.png",
     order: 60,

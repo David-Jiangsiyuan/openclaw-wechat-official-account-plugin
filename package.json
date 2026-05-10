@@ -19,7 +19,8 @@
     "wechat-official-account",
     "customer-service",
     "oaplugin",
-    "oagateway"
+    "oagateway",
+    "openclaw-wechatOA"
   ],
   "author": "OpenClaw Team",
   "license": "MIT",

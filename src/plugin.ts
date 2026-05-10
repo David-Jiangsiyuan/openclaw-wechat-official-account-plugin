@@ -20,13 +20,13 @@ let cfg: any = null;
  * 安装到 OpenClaw 时，SDK 会自动可用
  */
 export const wechatPlugin: any = {
-  id: "wechat",  
+  id: "openclaw-wechatOA",  
   
   meta: {
-    id: "wechat",
+    id: "openclaw-wechatOA",
     label: "WeChat Official Account",
     selectionLabel: "WeChat OA",
-    docsPath: "/docs/channels/wechat",
+    docsPath: "/docs/channels/openclaw-wechatOA",
     blurb: "Connect to WeChat Official Account via Gateway",
     order: 60,
   },  
@@ -145,7 +145,7 @@ export const wechatPlugin: any = {
       res.json({ 
         status: "ok", 
         timestamp: new Date().toISOString(),
-        plugin: "wechat",
+        plugin: "openclaw-wechatOA",
       });
     });
     

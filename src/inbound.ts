@@ -210,7 +210,7 @@ export function convertToOpenClawFormat(account: WeChatAccount, message: WeChatI
     
     // 附加信息
     metadata: {
-      channel: "wechat",
+      channel: "openclaw-wechatOA",
       msgId: message.MsgId,
       createTime: message.CreateTime,
       msgType: message.MsgType,
