@@ -35,6 +35,8 @@ export interface WeChatConfig {
     appSecret: string;
     token: string;
     encodingAESKey: string;
+    messageMode?: 'plain' | 'safe' | 'compat';
+    replyMode?: 'passive' | 'active';
   };
   openclaw: {
     apiUrl: string;

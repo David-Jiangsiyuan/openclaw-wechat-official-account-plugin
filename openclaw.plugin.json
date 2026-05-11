@@ -1,8 +1,8 @@
 {
   "id": "openclaw-wechatOA",
-  "version": "2.0.4",
+  "version": "3.0.0",
   "name": "OAPlugin - WeChat Official Account",
-  "description": "OpenClaw WeChat Official Account Plugin (OAPlugin v2.0) - Integrated with OAGateway",
+  "description": "OpenClaw WeChat Official Account Plugin (OAPlugin) v3.0.0 - Full-featured standard channel plugin",
   "author": "OpenClaw Team",
   "license": "MIT",
   "main": "dist/channel.js",

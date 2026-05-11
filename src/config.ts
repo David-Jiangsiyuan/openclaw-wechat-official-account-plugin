@@ -93,6 +93,8 @@ function loadFromEnv(): WeChatConfig {
       appSecret: process.env.WECHAT_APP_SECRET || "",
       token: process.env.WECHAT_TOKEN || "",
       encodingAESKey: process.env.WECHAT_ENCODING_AES_KEY || "",
+      messageMode: (process.env.WECHAT_MESSAGE_MODE as 'plain' | 'safe' | 'compat') || 'plain',
+      replyMode: (process.env.WECHAT_REPLY_MODE as 'passive' | 'active') || 'passive',
     },
     openclaw: {
       apiUrl: process.env.OPENCLAW_API_URL || "https://api.openclaw.ai",
